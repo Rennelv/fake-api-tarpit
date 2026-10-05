@@ -242,9 +242,7 @@ var AllPatterns = []CredentialPattern{
 		Provider:    "Heroku",
 		EnvKey:      "HEROKU_API_KEY",
 		Description: "Heroku Platform API Key",
-		Generate: func() string {
-			return randomUUID()
-		},
+		Generate: randomUUID,
 	},
 
 	// npm
@@ -418,9 +416,7 @@ var AllPatterns = []CredentialPattern{
 		Provider:    "Postmark",
 		EnvKey:      "POSTMARK_SERVER_TOKEN",
 		Description: "Postmark Server Inbound/Outbound Token",
-		Generate: func() string {
-			return randomUUID()
-		},
+		Generate: randomUUID,
 	},
 
 	// Notion
@@ -504,9 +500,7 @@ var AllPatterns = []CredentialPattern{
 		Provider:    "Pinecone",
 		EnvKey:      "PINECONE_API_KEY",
 		Description: "Pinecone Vector Index Key",
-		Generate: func() string {
-			return randomUUID()
-		},
+		Generate: randomUUID,
 	},
 
 	// MongoDB
@@ -557,9 +551,7 @@ var AllPatterns = []CredentialPattern{
 		Provider:    "Railway",
 		EnvKey:      "RAILWAY_TOKEN",
 		Description: "Railway Project API Token",
-		Generate: func() string {
-			return randomUUID()
-		},
+		Generate: randomUUID,
 	},
 
 	// Render

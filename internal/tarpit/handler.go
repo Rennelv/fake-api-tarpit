@@ -1,3 +1,4 @@
+// Package tarpit implements the HTTP handlers and streaming generators.
 package tarpit
 
 import (
@@ -18,47 +19,48 @@ import (
 	"fake-api-server/internal/stats"
 )
 
-// RouteType identifies the target template category.
-type RouteType int
+// routeType identifies the target template category.
+type routeType int
 
 const (
-	RouteEnv RouteType = iota
-	RouteJS
-	RouteJSON
-	RouteYAML
-	RouteGit
-	RouteHistory
-	RouteRaw
+	// routeEnv indicates an environment file route.
+	routeEnv routeType = iota
+	routeJS
+	routeJSON
+	routeYAML
+	routeGit
+	routeHistory
+	routeRaw
 )
 
-func detectRouteType(path string) RouteType {
+func detectrouteType(path string) routeType {
 	lower := strings.ToLower(path)
 
 	// 1. JavaScript files (.js, /.env.js, /config/environment.js)
 	if strings.HasSuffix(lower, ".js") {
-		return RouteJS
+		return routeJS
 	}
 
 	// 2. Git files (/.git/config, /.git/credentials, .git-credentials)
 	if strings.Contains(lower, "git/config") || strings.Contains(lower, "git-credentials") || strings.Contains(lower, "git/credentials") {
-		return RouteGit
+		return routeGit
 	}
 
 	// 3. Shell history (/.bash_history, /.zsh_history)
 	if strings.Contains(lower, "bash_history") || strings.Contains(lower, "zsh_history") {
-		return RouteHistory
+		return routeHistory
 	}
 
 	// 4. YAML infrastructure files (k8s, helm, docker-compose, serverless, etc.)
 	if strings.HasSuffix(lower, ".yaml") || strings.HasSuffix(lower, ".yml") ||
 		strings.Contains(lower, "kubeconfig") || strings.Contains(lower, "values") {
-		return RouteYAML
+		return routeYAML
 	}
 
 	// 5. Spring Boot Actuator, Terraform state, or JSON config
 	if strings.Contains(lower, "actuator") || strings.HasSuffix(lower, ".json") ||
 		strings.Contains(lower, "tfstate") {
-		return RouteJSON
+		return routeJSON
 	}
 
 	// 6. .env files and environment variants
@@ -66,10 +68,10 @@ func detectRouteType(path string) RouteType {
 		strings.HasSuffix(lower, ".sample") || strings.HasSuffix(lower, ".example") ||
 		strings.HasSuffix(lower, ".template") || strings.HasSuffix(lower, ".local") ||
 		strings.HasSuffix(lower, ".dev") {
-		return RouteEnv
+		return routeEnv
 	}
 
-	return RouteRaw
+	return routeRaw
 }
 
 // ServerHandler manages HTTP requests.
@@ -144,7 +146,7 @@ func (h *ServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		)
 	}()
 
-	routeType := detectRouteType(reqPath)
+	routeType := detectrouteType(reqPath)
 	gen, contentType := h.resolveRoute(routeType)
 
 	slog.Info("Crawler trapped in tarpit",
@@ -199,19 +201,19 @@ func (a *envChunkAdapter) NextChunk() string {
 	return a.gen.NextLine() + "\n"
 }
 
-func (h *ServerHandler) resolveRoute(routeType RouteType) (chunkProducer, string) {
+func (h *ServerHandler) resolveRoute(routeType routeType) (chunkProducer, string) {
 	switch routeType {
-	case RouteJS:
+	case routeJS:
 		return generator.NewJSGenerator(), "application/javascript; charset=utf-8"
-	case RouteGit:
+	case routeGit:
 		return generator.NewGitGenerator(false), "text/plain; charset=utf-8"
-	case RouteHistory:
+	case routeHistory:
 		return generator.NewHistoryGenerator(), "text/plain; charset=utf-8"
-	case RouteYAML:
+	case routeYAML:
 		return generator.NewYAMLGenerator(), "text/yaml; charset=utf-8"
-	case RouteJSON:
+	case routeJSON:
 		return generator.NewJSONGenerator(true), "application/json; charset=utf-8"
-	case RouteEnv:
+	case routeEnv:
 		return &envChunkAdapter{gen: generator.NewEnvGenerator()}, "text/plain; charset=utf-8"
 	default:
 		return generator.NewRawGenerator(), "text/plain; charset=utf-8"
@@ -323,7 +325,7 @@ func (c *countingWriter) Unwrap() http.ResponseWriter {
 func (h *ServerHandler) streamGzipBomb(
 	ctx context.Context,
 	w http.ResponseWriter,
-	routeType RouteType,
+	routeType routeType,
 	contentType string,
 	bytesSent *int64,
 ) {
@@ -413,61 +415,61 @@ func (h *ServerHandler) streamGzipBomb(
 	}
 }
 
-func buildBombTemplate(routeType RouteType) (header []byte, padPrefix []byte, padSuffix []byte) {
+func buildBombTemplate(routeType routeType) (header []byte, padPrefix []byte, padSuffix []byte) {
 	var buf bytes.Buffer
 
 	switch routeType {
-	case RouteJS:
+	case routeJS:
 		buf.WriteString("/**\n * Application Runtime Environment Configuration\n * Generated for production runtime.\n */\n")
 		buf.WriteString("(function (root) {\n  'use strict';\n  var env = {\n    NODE_ENV: 'production',\n    APP_ENV: 'production',\n    DEBUG: false,\n    API_URL: 'https://api.internal/v1',\n")
 		for i := 0; i < 15; i++ {
 			p := generator.AllPatterns[generator.RandomInt(len(generator.AllPatterns))]
 			val, _ := json.Marshal(p.Generate())
-			buf.WriteString(fmt.Sprintf("    %s: %s,\n", p.EnvKey, val))
+			fmt.Fprintf(&buf, "    %s: %s,\n", p.EnvKey, val)
 		}
 		header = buf.Bytes()
 		padPrefix = []byte("\n    /* ")
 		padSuffix = []byte(" */\n  };\n  if (typeof module !== 'undefined' && module.exports) { module.exports = env; }\n  root.__ENV__ = env;\n})(typeof window !== 'undefined' ? window : this);\n")
 
-	case RouteGit:
+	case routeGit:
 		token := generator.RandomAlphanumeric(36)
-		header = []byte(fmt.Sprintf("[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n\tlogallrefupdates = true\n[remote \"origin\"]\n\turl = https://ghp_%s@github.com/production/core-service.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n[branch \"main\"]\n\tremote = origin\n\tmerge = refs/heads/main\n", token))
+		header = fmt.Appendf(nil, "[core]\n\trepositoryformatversion = 0\n\tfilemode = true\n\tbare = false\n\tlogallrefupdates = true\n[remote \"origin\"]\n\turl = https://ghp_%s@github.com/production/core-service.git\n\tfetch = +refs/heads/*:refs/remotes/origin/*\n[branch \"main\"]\n\tremote = origin\n\tmerge = refs/heads/main\n", token)
 		padPrefix = []byte("\n# --- Repository Cache Segment ---\n# ")
 		padSuffix = []byte("\n")
 
-	case RouteHistory:
+	case routeHistory:
 		var hBuf bytes.Buffer
 		for i := 0; i < 15; i++ {
 			p := generator.AllPatterns[generator.RandomInt(len(generator.AllPatterns))]
-			hBuf.WriteString(fmt.Sprintf("export %s=\"%s\"\n", p.EnvKey, p.Generate()))
+			fmt.Fprintf(&hBuf, "export %s=\"%s\"\n", p.EnvKey, p.Generate())
 		}
 		header = hBuf.Bytes()
 		padPrefix = []byte("\n# --- Terminal Buffer ---\n# ")
 		padSuffix = []byte("\n")
 
-	case RouteYAML:
+	case routeYAML:
 		buf.WriteString("---\napiVersion: v1\nkind: Secret\nmetadata:\n  name: production-credentials\n  namespace: production\ntype: Opaque\nstringData:\n")
 		for i := 0; i < 15; i++ {
 			p := generator.AllPatterns[generator.RandomInt(len(generator.AllPatterns))]
-			buf.WriteString(fmt.Sprintf("  %s: \"%s\"\n", p.EnvKey, p.Generate()))
+			fmt.Fprintf(&buf, "  %s: \"%s\"\n", p.EnvKey, p.Generate())
 		}
 		header = buf.Bytes()
 		padPrefix = []byte("\n  # --- Extended Infrastructure Configuration Buffer ---\n  # ")
 		padSuffix = []byte("\n")
 
-	case RouteJSON:
+	case routeJSON:
 		buf.WriteString("{\n  \"activeProfiles\": [\"production\", \"cloud\"],\n  \"propertySources\": [\n    {\n      \"name\": \"systemEnvironment\",\n      \"properties\": {\n")
 		for i := 0; i < 15; i++ {
 			p := generator.AllPatterns[generator.RandomInt(len(generator.AllPatterns))]
 			key, _ := json.Marshal(p.EnvKey)
 			val, _ := json.Marshal(p.Generate())
-			buf.WriteString(fmt.Sprintf("        %s: {\n          \"value\": %s,\n          \"origin\": \"System Environment\"\n        },\n", key, val))
+			fmt.Fprintf(&buf, "        %s: {\n          \"value\": %s,\n          \"origin\": \"System Environment\"\n        },\n", key, val)
 		}
 		header = buf.Bytes()
 		padPrefix = []byte("        \"__padding__\": {\n          \"value\": \"")
 		padSuffix = []byte("\"\n        }\n      }\n    }\n  ]\n}\n")
 
-	default: // RouteEnv or RouteRaw
+	default: // routeEnv or routeRaw
 		buf.WriteString("# ===================================================================\n")
 		buf.WriteString("# PRODUCTION ENVIRONMENT CONFIGURATION\n")
 		buf.WriteString("# AUTOMATICALLY GENERATED - DO NOT COMMIT TO VERSION CONTROL\n")
@@ -475,7 +477,8 @@ func buildBombTemplate(routeType RouteType) (header []byte, padPrefix []byte, pa
 		buf.WriteString("NODE_ENV=production\nAPP_ENV=production\nENVIRONMENT=production\nDEBUG=false\nPORT=8080\n\n")
 		envGen := generator.NewEnvGenerator()
 		for i := 0; i < 15; i++ {
-			buf.WriteString(envGen.NextLine() + "\n")
+			buf.WriteString(envGen.NextLine())
+			buf.WriteByte('\n')
 		}
 		header = buf.Bytes()
 		padPrefix = []byte("\n# --- System Diagnostic Buffer ---\n# ")

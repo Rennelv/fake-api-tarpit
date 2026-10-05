@@ -1,3 +1,4 @@
+// Package config holds the configuration definitions and loaders.
 package config
 
 import (

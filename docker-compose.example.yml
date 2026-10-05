@@ -31,10 +31,10 @@ services:
       # Maximum connection duration (0 for unlimited until crawler disconnects)
       - MAX_STREAM_DURATION=0
       - ENABLE_GZIP_BOMB=true
-      - GZIP_BOMB_MAX_BYTES=51200
+      - GZIP_BOMB_MAX_BYTES=512000
       - LOG_LEVEL=info
     logging:
-      driver: local
+      driver: json-file
       options:
         max-size: "5m"
         max-file: "2"

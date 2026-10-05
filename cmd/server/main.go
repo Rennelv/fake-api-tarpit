@@ -1,3 +1,4 @@
+// Package main is the entry point for the fake API server.
 package main
 
 import (

@@ -68,6 +68,7 @@ func TestCrawlerContextCancellation(t *testing.T) {
 	handler := NewServerHandler(cfg, metrics)
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	req := httptest.NewRequest("GET", "/.env", nil).WithContext(ctx)
 	req.Header.Set("User-Agent", "EvilScanner/1.0")
 
@@ -89,10 +90,12 @@ func TestCrawlerContextCancellation(t *testing.T) {
 			break
 		}
 	}
+	_ = scanner.Err()
 	// Drain reader so writer isn't blocked if any write is pending
 	go func() {
 		for scanner.Scan() {
 		}
+		_ = scanner.Err()
 	}()
 
 	select {
@@ -134,6 +137,7 @@ func TestMaxBytesLimitClose(t *testing.T) {
 	for scanner.Scan() {
 		totalRead += len(scanner.Bytes()) + 1
 	}
+	_ = scanner.Err()
 
 	select {
 	case <-done:
@@ -190,6 +194,7 @@ func TestConcurrencyLimit(t *testing.T) {
 		scanner := bufio.NewScanner(pr1)
 		for scanner.Scan() {
 		}
+		_ = scanner.Err()
 	}()
 
 	time.Sleep(10 * time.Millisecond)
@@ -350,9 +355,3 @@ func TestJavaScriptRoute(t *testing.T) {
 	}
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}

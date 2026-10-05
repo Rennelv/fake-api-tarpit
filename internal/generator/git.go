@@ -44,7 +44,7 @@ func (g *GitGenerator) NextChunk() string {
 		"\tname = Production Deployment Agent",
 		"\temail = devops@internal-infra.net",
 		"[credential]",
-		fmt.Sprintf("\thelper = store --file /root/.git-credentials"),
+		"\thelper = store --file /root/.git-credentials",
 	}
 
 	if idx < len(gitConfigLines) {

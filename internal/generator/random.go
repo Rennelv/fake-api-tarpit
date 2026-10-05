@@ -4,7 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"math/big"
-	"sync"
 )
 
 const (
@@ -15,13 +14,7 @@ const (
 	base64std    = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+/="
 )
 
-// randBufPool provides reusable byte slices to minimize allocations during streaming.
-var randBufPool = sync.Pool{
-	New: func() any {
-		b := make([]byte, 128)
-		return &b
-	},
-}
+
 
 // RandomString returns a random string of length n chosen from charset.
 func RandomString(charset string, n int) string {
@@ -64,12 +57,12 @@ func RandomBase64URL(n int) string {
 	return RandomString(base64url, n)
 }
 
-// RandomInt returns a random integer in [0, max).
-func RandomInt(max int) int {
-	if max <= 0 {
+// RandomInt returns a random integer in [0, maxVal).
+func RandomInt(maxVal int) int {
+	if maxVal <= 0 {
 		return 0
 	}
-	n, err := rand.Int(rand.Reader, big.NewInt(int64(max)))
+	n, err := rand.Int(rand.Reader, big.NewInt(int64(maxVal)))
 	if err != nil {
 		return 0
 	}

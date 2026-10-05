@@ -1,3 +1,4 @@
+// Package generator contains implementations for creating fake payloads.
 package generator
 
 import (
@@ -72,7 +73,7 @@ func (g *EnvGenerator) NextLine() string {
 	case 3:
 		key = "PRIMARY_" + key
 	case 4:
-		key = key + "_PRIMARY"
+		key += "_PRIMARY"
 	case 5:
 		key = "BACKUP_" + key
 	}

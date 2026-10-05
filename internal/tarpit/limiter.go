@@ -2,15 +2,14 @@ package tarpit
 
 import (
 	"errors"
-	"sync"
 )
 
+// ErrMaxConnectionsExceeded is returned when the concurrency limit is reached.
 var ErrMaxConnectionsExceeded = errors.New("max concurrent connections reached")
 
 // Limiter restricts the number of concurrent streaming requests.
 type Limiter struct {
 	sem chan struct{}
-	mu  sync.Mutex
 }
 
 // NewLimiter creates a concurrency limiter with capacity maxConcurrent.

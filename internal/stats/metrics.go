@@ -1,3 +1,4 @@
+// Package stats provides metrics tracking for the tarpit server.
 package stats
 
 import (
