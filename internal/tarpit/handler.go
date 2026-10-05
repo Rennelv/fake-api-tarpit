@@ -469,14 +469,19 @@ func buildBombTemplate(routeType routeType) (header []byte, padPrefix []byte, pa
 		padPrefix = []byte("        \"__padding__\": {\n          \"value\": \"")
 		padSuffix = []byte("\"\n        }\n      }\n    }\n  ]\n}\n")
 
-	default: // routeEnv or routeRaw
+	case routeRaw:
+		header = []byte("-----BEGIN OPENSSH PRIVATE KEY-----\n")
+		padPrefix = []byte("")
+		padSuffix = []byte("-----END OPENSSH PRIVATE KEY-----\n")
+
+	default: // routeEnv
 		buf.WriteString("# ===================================================================\n")
 		buf.WriteString("# PRODUCTION ENVIRONMENT CONFIGURATION\n")
 		buf.WriteString("# AUTOMATICALLY GENERATED - DO NOT COMMIT TO VERSION CONTROL\n")
 		buf.WriteString("# ===================================================================\n")
 		buf.WriteString("NODE_ENV=production\nAPP_ENV=production\nENVIRONMENT=production\nDEBUG=false\nPORT=8080\n\n")
 		envGen := generator.NewEnvGenerator()
-		for i := 0; i < 15; i++ {
+		for range 15 {
 			buf.WriteString(envGen.NextLine())
 			buf.WriteByte('\n')
 		}
