@@ -1,0 +1,51 @@
+services:
+  caddy:
+    image: caddy:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - fake-api-server
+
+  fake-api-server:
+    build: .
+    restart: unless-stopped
+    environment:
+      # Slow drip delay: 500ms emits ~140 bytes/sec, keeping crawler hostage with minimal traffic
+      - TARPIT_DELAY_MS=500ms
+      # Max egress bandwidth per stream: caps fake output at 16 KB (enough for ~150 fake keys)
+      - MAX_BYTES_PER_STREAM=16384
+      # Behavior after hitting 16 KB:
+      # - "stall": stops sending bytes, keeps connection open until crawler times out (wastes maximum crawler time for 0 bytes)
+      # - "close": immediately ends HTTP response
+      - POST_LIMIT_BEHAVIOR=stall
+      # Hard daily circuit breaker in Megabytes (e.g. 500 MB/day max total outbound, 0 for unlimited)
+      - DAILY_EGRESS_LIMIT_MB=2000
+      # Max concurrent crawler streams to avoid host memory/connection exhaustion
+      - MAX_CONCURRENT=100
+      # Maximum connection duration (0 for unlimited until crawler disconnects)
+      - MAX_STREAM_DURATION=0
+      - ENABLE_GZIP_BOMB=true
+      - GZIP_BOMB_MAX_BYTES=51200
+      - LOG_LEVEL=info
+    logging:
+      driver: local
+      options:
+        max-size: "5m"
+        max-file: "2"
+    expose:
+      - "8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 64M
+
+volumes:
+  caddy_data:
+  caddy_config:

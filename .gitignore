@@ -1,0 +1,18 @@
+# Binaries & test artifacts
+fake-api-server
+*.exe
+*.test
+*.out
+
+# Environment & local secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+*.log
+.DS_Store
+

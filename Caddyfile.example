@@ -1,0 +1,92 @@
+(crawler_protection) {
+	@seems_possible_files {
+		# Environment configurations
+		path /.env /.env.local /.env.production /.env.staging /.env.development
+		path /.env_dev /.env_local /.env.example /.env.sample /.env.template /.env.txt
+		path /.env.js /config/environment.js /config.js /.envrc
+
+		# Git repository credentials & remotes
+		path /.git/config /.git/credentials /.git/HEAD /.git-credentials
+
+		# Cloud, IaC & Kubernetes manifests
+		path /terraform.tfstate /.terraform.tfstate /terraform.tfvars
+		path /kubeconfig /.kube/config /values.yaml /helm-values.yaml
+		path /secret.yaml /secrets.yaml /secrets.yml /secrets.json
+		path /.aws/credentials /.aws/config /sftp-config.json /.Dockerrun.aws.json
+		path /docker-compose.yml /docker-compose.prod.yml /docker-compose.dev.yml /docker-compose.override.yml
+		path /serverless.yml /serverless.yaml /Jenkinsfile
+		path /firebase.json /firebaseServiceAccountKey.json /service-account.json /credentials.json /key.json
+
+		# CI/CD deployment pipelines
+		path /.gitlab-ci.yml /.gitlab-ci.yaml /.circleci/config.yml /.travis.yml
+		path /.github/workflows/deploy.yml /.github/workflows/main.yml
+
+		# Framework debug endpoints & application configs
+		path /actuator/env /actuator/configprops /storage/logs/laravel.log
+		path /config/database.yml /config/master.key /database.yml /database.json
+		path /appsettings.json /appsettings.Production.json /appsettings.Development.json
+		path /application.yml /application.properties /application-prod.yml
+
+		# Shell history & host keys
+		path /.bash_history /.zsh_history /.htpasswd /.netrc /.pgpass /id_rsa /id_ed25519
+	}
+
+	# Routed to fake-api-server to be poisoned, drip-delayed, or gzip-bombed.
+	handle @seems_possible_files {
+		reverse_proxy fake-api-server:8080 {
+			# Disable buffering so chunked streams and gzip bombs flow directly to socket
+			flush_interval -1
+
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	@blocked_noise {
+		# Any other .env or .git files not trapped above
+		path /.env* /.git*
+
+		# Cloud, system, version control & tool dotfiles (never legitimate in real web apps)
+		path /.aws* /.kube* /.ssh* /.svn* /.docker* /.terraform*
+		path /.boto /.s3cfg /.s3cmd.ini /.pypirc /.msmtprc /.my.cnf /.vault-token
+		path /.npmrc /.yarnrc
+
+		# Canary probes (pathscan honeypot detection)
+		path /pathscan*
+
+		# WordPress & CMS scanner noise (not applicable to modern stack)
+		path /wp-config* /wp-login.php /config.inc.php /sites/default/settings.php /web.config*
+
+		# Editor backup, swap & temp files from scanner dictionary
+		path /application.properties.bak /application.yml.bak /database.yml.bak
+		path /config.php.bak /config.php.old /settings.py.bak /terraform.tfstate.backup
+
+		# Public non-secret manifests
+		path /package.json /composer.json /composer.lock /webpack.config.js /babel.config.js
+		path /.eslintrc.js /.eslintrc.json /.jest.config.js
+	}
+
+	# Immediate 404 for remaining impossible files & scanner noise
+	handle @blocked_noise {
+		respond "Not Found" 404
+	}
+}
+
+example.com {
+	import crawler_protection
+
+	# Real application backend
+	handle {
+		reverse_proxy app:3000
+	}
+}
+
+api.example.com {
+	import crawler_protection
+
+	# API backend
+	handle {
+		reverse_proxy api:8080
+	}
+}
+
