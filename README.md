@@ -1,4 +1,4 @@
-# fake-api-server
+# fake-api-tarpit
 
 A Go HTTP server designed to intercept automated crawlers probing for sensitive files (e.g., `.env`, credentials). It streams dynamically generated fake credentials at a slow rate to delay scanners.
 
@@ -17,7 +17,7 @@ When a crawler requests a targeted path (e.g., `/.env`, `/actuator/env`):
    - **Stalling (`POST_LIMIT_BEHAVIOR=stall`)**: Once the byte cap (`MAX_BYTES_PER_STREAM`) is reached, the server stops transmitting data but keeps the connection open until the client times out.
 
 2. **Generated Credentials**:
-   - Emits dynamically-generated tokens formatted like real credentials for various services (AWS, GitHub, Stripe, OpenAI, etc.).
+   - Streams fake AWS, GitHub, Stripe, OpenAI and etc.. tokens.
 
 3. **Bandwidth Controls**:
    - **`MAX_BYTES_PER_STREAM`**: Per-connection egress cap (default `16 KB`).
@@ -26,6 +26,14 @@ When a crawler requests a targeted path (e.g., `/.env`, `/actuator/env`):
 ---
 
 ## ⚡ Quickstart
+
+### Pre-built Docker Image
+
+The latest container image is available via GitHub Container Registry (GHCR):
+
+```bash
+docker run -p 8080:8080 ghcr.io/rennelv/fake-api-tarpit:latest
+```
 
 ### Running with Docker Compose & Caddy
 
